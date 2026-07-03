@@ -4,37 +4,34 @@ import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import io.github.afamiliarquiet.be_a_doll.BeADecoration;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Arm;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin(PlayerEntity.class)
+@Mixin(ServerPlayer.class)
 public abstract class ShoulderAwarenessPlayerEntityMixin extends LivingEntity {
-	@Shadow
-	public abstract Arm getMainArm();
 
-	protected ShoulderAwarenessPlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
+	protected ShoulderAwarenessPlayerEntityMixin(EntityType<? extends LivingEntity> entityType, Level world) {
 		super(entityType, world);
 	}
 
-	@Definition(id = "getShoulderEntityLeft", method = "Lnet/minecraft/entity/player/PlayerEntity;getShoulderEntityLeft()Lnet/minecraft/nbt/NbtCompound;")
-	@Definition(id = "isEmpty", method = "Lnet/minecraft/nbt/NbtCompound;isEmpty()Z")
+	@Definition(id = "getShoulderEntityLeft", method = "Lnet/minecraft/server/level/ServerPlayer;getShoulderEntityLeft()Lnet/minecraft/nbt/CompoundTag;")
+	@Definition(id = "isEmpty", method = "Lnet/minecraft/nbt/CompoundTag;isEmpty()Z")
 	@Expression("this.getShoulderEntityLeft().isEmpty()")
-	@ModifyExpressionValue(method = "addShoulderEntity", at = @At("MIXINEXTRAS:EXPRESSION"))
+	@ModifyExpressionValue(method = "setEntityOnShoulder", at = @At("MIXINEXTRAS:EXPRESSION"))
 	private boolean checkLeftShoulder(boolean original) {
-		return BeADecoration.shoulderEntityIsEmpty(this, original, Arm.LEFT);
+		return BeADecoration.shoulderIsEmpty(this, original, HumanoidArm.LEFT);
 	}
 
-	@Definition(id = "getShoulderEntityRight", method = "Lnet/minecraft/entity/player/PlayerEntity;getShoulderEntityRight()Lnet/minecraft/nbt/NbtCompound;")
-	@Definition(id = "isEmpty", method = "Lnet/minecraft/nbt/NbtCompound;isEmpty()Z")
+	@Definition(id = "getShoulderEntityRight", method = "Lnet/minecraft/server/level/ServerPlayer;getShoulderEntityRight()Lnet/minecraft/nbt/CompoundTag;")
+	@Definition(id = "isEmpty", method = "Lnet/minecraft/nbt/CompoundTag;isEmpty()Z")
 	@Expression("this.getShoulderEntityRight().isEmpty()")
-	@ModifyExpressionValue(method = "addShoulderEntity", at = @At("MIXINEXTRAS:EXPRESSION"))
+	@ModifyExpressionValue(method = "setEntityOnShoulder", at = @At("MIXINEXTRAS:EXPRESSION"))
 	private boolean checkRightShoulder(boolean original) {
-		return BeADecoration.shoulderEntityIsEmpty(this, original, Arm.RIGHT);
+		return BeADecoration.shoulderIsEmpty(this, original, HumanoidArm.RIGHT);
 	}
 }

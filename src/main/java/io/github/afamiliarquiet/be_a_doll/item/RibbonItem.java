@@ -2,7 +2,9 @@ package io.github.afamiliarquiet.be_a_doll.item;
 
 import io.github.afamiliarquiet.be_a_doll.BeAMaid;
 import io.github.afamiliarquiet.be_a_doll.diary.BeABirdwatcher;
-import io.github.afamiliarquiet.be_a_doll.mixin.synthetic_treats.FoxTrustInvoker;
+import io.github.afamiliarquiet.be_a_doll.mixin.synthetic_treats.FoxEntityTrustInvoker;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Pose;
@@ -14,15 +16,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.server.network.ServerPlayer;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
-
-import java.util.logging.Level;
+import org.joml.Vector3fc;
 
 public class RibbonItem extends Item {
 	public RibbonItem(Properties settings) {
@@ -30,7 +32,7 @@ public class RibbonItem extends Item {
 	}
 
 	@Override
-	public InteractionResult useOnEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
+	public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
 		if (entity instanceof Player doll && BeAMaid.isDoll(doll)) {
 			if (doll.startRiding(user)) {
 				user.playSound(BeABirdwatcher.RAVEN_CHIRP, 1f, 1f);
@@ -38,12 +40,12 @@ public class RibbonItem extends Item {
 			}
 		} else {
 			InteractionResult tried = useToTryRiding(stack, user, entity, hand);
-			if (tried.isAccepted()) {
+			if (tried.consumesAction()) {
 				return tried;
 			}
 		}
 
-		return super.useOnEntity(stack, user, entity, hand);
+		return super.interactLivingEntity(stack, user, entity, hand);
 	}
 
 	public InteractionResult useToTryRiding(ItemStack stack, Player user, Entity entity, InteractionHand hand) {
@@ -52,10 +54,10 @@ public class RibbonItem extends Item {
 			boolean shouldRide = false;
 			if (entity instanceof TamableAnimal tameable) {
 				EntityReference<LivingEntity> ownerRef = tameable.getOwnerReference();
-				if (ownerRef != null && ownerRef.uuidEquals(user) && entity.getWidth() > user.getWidth()) {
+				if (ownerRef != null && ownerRef.equals(user) && entity.getBbWidth() > user.getBbWidth()) {
 					shouldRide = true;
 				}
-			} else if (entity instanceof Fox foxesAreSoCool && ((FoxTrustInvoker)foxesAreSoCool).invokeCanTrust(user)) {
+			} else if (entity instanceof Fox foxesAreSoCool && ((FoxEntityTrustInvoker)foxesAreSoCool).invokeCanTrust(user)) {
 				shouldRide = true;
 			}
 
@@ -71,18 +73,18 @@ public class RibbonItem extends Item {
 	@Override
 	public InteractionResult use(Level world, Player user, InteractionHand hand) {
 		// yeah no lol. did you not see the C2SDollDismountLetter i had to make? client's gotta hear about this
-		if (/*!user.getWorld().isClient && */!user.getPassengerList().isEmpty() && user.shouldCancelInteraction()) {
+		if (/*!user.getWorld().isClient && */!user.getPassengers().isEmpty() && user.canInteractWithLevel()) {
 //			user.removeAllPassengers();
-			Entity doll = user.getPassengerList().getLast();
-			BlockHitResult blockHitResult = raycast(world, user, RaycastContext.FluidInteractionHandling.NONE);
-			Vec3d pos;
+			Entity doll = user.getPassengers().getLast();
+			BlockHitResult blockHitResult = getPlayerPOVHitResult(world, user, ClipContext.Fluid.NONE);
+			Vec3 pos;
 			// fear my mega if statement of doom! it could be worse. i'm just being a little bit silly with it.
-			if (!world.isClient()
+			if (!world.isClientSide()
 				&& blockHitResult.getType() == HitResult.Type.BLOCK
 				&& doll instanceof ServerPlayer serverPlayer
 				&& (pos = getDollPlacementPos(blockHitResult, doll)) != null
 			) {
-				serverPlayer.teleportTo(new TeleportTarget(serverPlayer.getWorld(), pos, Vec3d.ZERO, user.getYaw() + 180, user.getPitch() * -1, TeleportTarget.NO_OP));
+				serverPlayer.teleport(new TeleportTransition(serverPlayer.level(), pos, Vec3.ZERO, user.getYRot() + 180, user.getXRot() * -1, TeleportTransition.DO_NOTHING));
 			} else {
 				doll.stopRiding();
 			}
@@ -93,25 +95,25 @@ public class RibbonItem extends Item {
 		}
 	}
 
-	public static @Nullable Vec3d getDollPlacementPos(BlockHitResult blockHitResult, Entity doll) {
-		Vec3d pos = blockHitResult.getPos();
+	public static @Nullable Vec3 getDollPlacementPos(BlockHitResult blockHitResult, Entity doll) {
+		Vec3 pos = blockHitResult.getLocation();
 		EntityDimensions dollStanding = doll.getDimensions(Pose.STANDING);
 
-		if (blockHitResult.getSide().getAxis() == Direction.Axis.Y) {
-			if (blockHitResult.getSide() == Direction.DOWN) {
+		if (blockHitResult.getDirection().getAxis() == Direction.Axis.Y) {
+			if (blockHitResult.getDirection() == Direction.DOWN) {
 				pos = pos.add(0, -dollStanding.height(), 0);
 			}
 
 			// just because i'm feeling extra nice, i'll give you a horizontal aim assist too.
-			Vec3d firstCheck = checkForCollisionsOnAxis(doll, dollStanding, pos, Direction.Axis.X);
+			Vec3 firstCheck = checkForCollisionsOnAxis(doll, dollStanding, pos, Direction.Axis.X);
 			if (firstCheck != null) {
 				pos = firstCheck;
 			} else {
 				pos = checkForCollisionsOnAxis(doll, dollStanding, pos, Direction.Axis.Z);
 			}
 		} else {
-			Vector3f sideVec = blockHitResult.getSide().getUnitVector();
-			pos = pos.add(sideVec.x * dollStanding.width() / 2, 0, sideVec.z * dollStanding.width() / 2);
+			Vector3fc sideVec = blockHitResult.getDirection().getUnitVec3f();
+			pos = pos.add(sideVec.x() * dollStanding.width() / 2, 0, sideVec.z()* dollStanding.width() / 2);
 
 			// adjust for being low or high enough to clip into a possible adjacent block
 			pos = checkForCollisionsOnAxis(doll, dollStanding, pos, Direction.Axis.Y);
@@ -119,7 +121,7 @@ public class RibbonItem extends Item {
 
 		// check for any other collisions, if collide then. bad aim, sorry, just gonna drop.
 		// i'll maybe update the math later.
-		if (pos == null || doll.getWorld().getBlockCollisions(doll, dollStanding.getBoxAt(pos)).iterator().hasNext()) {
+		if (pos == null || doll.level().getBlockCollisions(doll, dollStanding.makeBoundingBox(pos)).iterator().hasNext()) {
 			return null;
 		} else {
 			return pos;
@@ -130,19 +132,19 @@ public class RibbonItem extends Item {
 	//  you've really got a lot of block collision checking going on here
 	//  anyway this partial aim assist only helps in the case of one collision.
 	//  redoing this like entity.amfc would probably be the best way to fix that. assuming amfc is.. what this is.
-	private static @Nullable Vec3d checkForCollisionsOnAxis(Entity doll, EntityDimensions dollStanding, @Nullable Vec3d pos, Direction.Axis axis) {
-		if (pos == null || !doll.getWorld().getBlockCollisions(doll, dollStanding.getBoxAt(pos)).iterator().hasNext()) {
+	private static @Nullable Vec3 checkForCollisionsOnAxis(Entity doll, EntityDimensions dollStanding, @Nullable Vec3 pos, Direction.Axis axis) {
+		if (pos == null || !doll.level().getBlockCollisions(doll, dollStanding.makeBoundingBox(pos)).iterator().hasNext()) {
 			return pos;
 		} else {
-			double xyz = pos.getComponentAlongAxis(axis);
+			double xyz = pos.get(axis);
 			double positiveEdgeCrumb = (xyz + (axis.isVertical() ? dollStanding.height() : dollStanding.width() / 2)) - Math.ceil(xyz);
 			double negativeEdgeCrumb = Math.floor(xyz) - (xyz - (axis.isVertical() ? 0 : dollStanding.width() / 2));
-			if (positiveEdgeCrumb < 0.5 && positiveEdgeCrumb > 0 && !doll.getWorld().getBlockCollisions(doll, dollStanding.getBoxAt(pos.withAxis(axis, xyz - positiveEdgeCrumb))).iterator().hasNext()) {
+			if (positiveEdgeCrumb < 0.5 && positiveEdgeCrumb > 0 && !doll.level().getBlockCollisions(doll, dollStanding.makeBoundingBox(pos.with(axis, xyz - positiveEdgeCrumb))).iterator().hasNext()) {
 				// yay! adjusting doll down a bit works, try now
-				return pos.withAxis(axis, xyz - positiveEdgeCrumb);
-			} else if (negativeEdgeCrumb < 0.5 && negativeEdgeCrumb > 0 && !doll.getWorld().getBlockCollisions(doll, dollStanding.getBoxAt(pos.withAxis(axis, xyz + negativeEdgeCrumb))).iterator().hasNext()) {
+				return pos.with(axis, xyz - positiveEdgeCrumb);
+			} else if (negativeEdgeCrumb < 0.5 && negativeEdgeCrumb > 0 && !doll.level().getBlockCollisions(doll, dollStanding.makeBoundingBox(pos.with(axis, xyz + negativeEdgeCrumb))).iterator().hasNext()) {
 				// yay! adjusting doll up a bit works, try now
-				return pos.withAxis(axis, xyz + negativeEdgeCrumb);
+				return pos.with(axis, xyz + negativeEdgeCrumb);
 			} else {
 				// well. if there's gonna be collision, just drop
 				return null;

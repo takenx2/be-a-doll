@@ -4,15 +4,15 @@ import com.google.common.collect.HashMultimap;
 import io.github.afamiliarquiet.be_a_doll.diary.BeALibrarian;
 import io.github.afamiliarquiet.be_a_doll.diary.BeAWitch;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Holder;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
+
 
 public class BeAMaid {
 	// to be completely honest, most of this is probably better suited to BeADoll in name
@@ -20,11 +20,11 @@ public class BeAMaid {
 
 	// id used for checking on things, map used for removing
 	public static final Identifier DOLLIFIED_MODIFIER_ID = BeADoll.id("dollified");
-	public static final HashMultimap<RegistryEntry<EntityAttribute>, EntityAttributeModifier> DOLL_MODIFICATIONS = HashMultimap.create();
+	public static final HashMultimap<Holder<Attribute>, AttributeModifier> DOLL_MODIFICATIONS = HashMultimap.create();
 	static {
-		DOLL_MODIFICATIONS.put(EntityAttributes.SCALE, new EntityAttributeModifier(DOLLIFIED_MODIFIER_ID, -0.7, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-		DOLL_MODIFICATIONS.put(EntityAttributes.MAX_HEALTH, new EntityAttributeModifier(DOLLIFIED_MODIFIER_ID, -0.6, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-		DOLL_MODIFICATIONS.put(EntityAttributes.ATTACK_DAMAGE, new EntityAttributeModifier(DOLLIFIED_MODIFIER_ID, -0.8, EntityAttributeModifier.Operation.ADD_VALUE));
+		DOLL_MODIFICATIONS.put(Attributes.SCALE, new AttributeModifier(DOLLIFIED_MODIFIER_ID, -0.7, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+		DOLL_MODIFICATIONS.put(Attributes.MAX_HEALTH, new AttributeModifier(DOLLIFIED_MODIFIER_ID, -0.6, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+		DOLL_MODIFICATIONS.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(DOLLIFIED_MODIFIER_ID, -0.8, AttributeModifier.Operation.ADD_VALUE));
 	}
 
 	public static void bestowApron() {
@@ -43,8 +43,8 @@ public class BeAMaid {
 
 		// if there's any signs of being a doll.... yep, that's a doll
 //		int dollPoints = 0;
-		for (RegistryEntry<EntityAttribute> attribute : DOLL_MODIFICATIONS.keySet()) {
-			EntityAttributeInstance instance = player.getAttributes().getCustomInstance(attribute);
+		for (Holder<Attribute> attribute : DOLL_MODIFICATIONS.keySet()) {
+			AttributeInstance instance = player.getAttributes().getInstance(attribute);
 			if (instance != null && instance.hasModifier(DOLLIFIED_MODIFIER_ID)) {
 				return true;
 //				dollPoints++;
@@ -68,16 +68,16 @@ public class BeAMaid {
 		if (variant.isDollish()) {
 			// add persistent instead of add temporary. because doll is a persistent fact of life
 			DOLL_MODIFICATIONS.forEach((attribute, modifier) -> {
-				EntityAttributeInstance instance = player.getAttributes().getCustomInstance(attribute);
+				AttributeInstance instance = player.getAttributes().getInstance(attribute);
 				if (instance != null && modifier != null && !instance.hasModifier(modifier.id())) {
-					instance.addPersistentModifier(modifier);
+					instance.addPermanentModifier(modifier);
 				}
 			});
 			BeALibrarian.reshapeDoll(player, variant);
 		} else {
 			BeALibrarian.repress(player);
-			player.removeStatusEffect(BeAWitch.CARED_FOR);
-			player.getAttributes().removeModifiers(DOLL_MODIFICATIONS);
+			player.removeEffect(BeAWitch.CARED_FOR);
+			player.getAttributes().removeAttributeModifiers(DOLL_MODIFICATIONS);
 		}
 	}
 }

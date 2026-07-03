@@ -8,12 +8,12 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextCodecs;
-import net.minecraft.util.Unit;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 
 @SuppressWarnings("UnstableApiUsage")
 public class BeALibrarian {
@@ -26,11 +26,11 @@ public class BeALibrarian {
 			.syncWith(BeADoll.Variant.STREAM_CODEC, AttachmentSyncPredicate.all())
 	);
 
-	public static final AttachmentType<Text> DOLL_NAME = AttachmentRegistry.create(
+	public static final AttachmentType<Component> DOLL_NAME = AttachmentRegistry.create(
 		BeADoll.id("doll_name"),
 		builder -> builder
-			.persistent(TextCodecs.CODEC)
-			.syncWith(TextCodecs.UNLIMITED_REGISTRY_PACKET_CODEC, AttachmentSyncPredicate.all())
+			.persistent(ComponentSerialization.CODEC)
+			.syncWith(ComponentSerialization.STREAM_CODEC, AttachmentSyncPredicate.all())
 	);
 
 	// yep. keeping the letter, envelope and all. no sync needed. certainly no persistence.
@@ -85,21 +85,22 @@ public class BeALibrarian {
 		// i eated it sorry... -takenx2
 	}
 
-	public static @Nullable Text inspectDollLabel(@NotNull Player doll) {
+	public static @Nullable Component inspectDollLabel(@NotNull Player doll) {
 		return doll.getAttached(DOLL_NAME);
 	}
 
-	public static void relabelDoll(@NotNull Player doll, @Nullable Text name) {
+	public static void relabelDoll(@NotNull Player doll, @Nullable Component name) {
 		doll.setAttached(DOLL_NAME, name);
 	}
 
 	public static void repress(@NotNull Player player) {
 		// clean up special compat treat
-		if (FabricLoader.getInstance().isModLoaded("occmy")) {
-			if (inspectDollMaterial(player) == BeADoll.Variant.CLOCKWORK) {
-				player.removeAttached(OccEntities.ENJOINED);
-			}
-		}
+//		if (FabricLoader.getInstance().isModLoaded("occmy")) {
+//			if (inspectDollMaterial(player) == BeADoll.Variant.CLOCKWORK) {
+//				player.removeAttached(OccEntities.ENJOINED);
+//			}
+//		}
+		// not even any Crumbs left...
 
 		player.removeAttached(DOLL_VARIANT);
 		player.removeAttached(DOLL_NAME);

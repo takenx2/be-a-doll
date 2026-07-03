@@ -19,7 +19,7 @@ public class BeALocalDoll implements ClientModInitializer {
 
 		ClientTickEvents.START_CLIENT_TICK.register((client -> {
 			if (CLIENT_CONFIG.dirty) {
-				if (ClientPlayNetworking.canSend(C2SKeysmashConfigSyncLetter.ID)) {
+				if (ClientPlayNetworking.canSend(C2SKeysmashConfigSyncLetter.TYPE)) {
 					ClientPlayNetworking.send(CLIENT_CONFIG.writtenForAFriend());
 				}
 				CLIENT_CONFIG.dirty = false;

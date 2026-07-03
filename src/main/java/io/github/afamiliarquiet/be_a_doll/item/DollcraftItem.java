@@ -9,18 +9,13 @@ import io.github.afamiliarquiet.be_a_doll.diary.BeAWitch;
 import io.github.afamiliarquiet.be_a_doll.letters.S2CDollRepairedLetter;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.UseCooldownComponent;
-import net.minecraft.component.type.WeaponComponent;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.particle.ItemStackParticleEffect;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -30,7 +25,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.component.UseCooldown;
+import net.minecraft.world.item.component.Weapon;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.function.Predicate;
 
@@ -38,7 +35,7 @@ public class DollcraftItem extends Item {
 
 	public DollcraftItem(Properties Properties) {
 		super(Properties.useCooldown(1.3f)
-			.component(DataComponentTypes.WEAPON, new WeaponComponent(1)));
+			.component(DataComponents.WEAPON, new Weapon(1)));
 	}
 
 	// care for self
@@ -150,13 +147,13 @@ public class DollcraftItem extends Item {
 			return ItemStack.EMPTY;
 		}
 
-		if (user.isInCreativeMode() || user.getlevel().isClient() && !user.isMainPlayer()) { // otherclientplayers have no inv, so cheat for particles
-			return this.getVariant().getDefaultCareMaterial().getDefaultStack();
+		if (user.isCreative() || user.level().isClientSide() && !user.isClientAuthoritative()) { // otherclientplayers have no inv, so cheat for particles
+			return this.getVariant().getDefaultCareMaterial().getDefaultInstance();
 		} else {
-			Predicate<ItemStack> predicate = stack -> stack.isIn(this.getVariant().getCareMaterialTag());
+			Predicate<ItemStack> predicate = stack -> stack.is(this.getVariant().getCareMaterialTag());
 
-			for (int i = 0; i < user.getInventory().size(); i++) {
-				ItemStack current = user.getInventory().getStack(i);
+			for (int i = 0; i < user.getInventory().getContainerSize(); i++) {
+				ItemStack current = user.getInventory().getItem(i);
 				if (predicate.test(current)) {
 					return current;
 				}
@@ -171,24 +168,24 @@ public class DollcraftItem extends Item {
 			return;
 		}
 		for (int i = 0; i < count; i++) {
-			Vec3d vel = new Vec3d(
+			Vec3 vel = new Vec3(
 				(doll.getRandom().nextFloat() - 0.5) * 0.1,
 				Math.random() * 0.1 + 0.1,
 				(doll.getRandom().nextFloat() - 0.5) * 0.1);
 
-			Box dollHouse = doll.getBoundingBox();
-			Vec3d pos = new Vec3d(
-				doll.getRandom().nextDouble() * dollHouse.getLengthX(),
-				doll.getRandom().nextDouble() * dollHouse.getLengthY(),
-				doll.getRandom().nextDouble() * dollHouse.getLengthZ()
+			AABB dollHouse = doll.getBoundingBox();
+			Vec3 pos = new Vec3(
+				doll.getRandom().nextDouble() * dollHouse.getXsize(),
+				doll.getRandom().nextDouble() * dollHouse.getYsize(),
+				doll.getRandom().nextDouble() * dollHouse.getZsize()
 			);
-			pos = pos.add(dollHouse.getMinPos());
+			pos = pos.add(dollHouse.getMinPosition());
 
-			doll.getlevel().addParticleClient(new ItemStackParticleEffect(ParticleTypes.ITEM, material), pos.x, pos.y, pos.z, vel.x, vel.y + 0.05, vel.z);
+			doll.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, material.getItem()), pos.x, pos.y, pos.z, vel.x, vel.y + 0.05, vel.z);
 		}
 	}
 
 	public BeADoll.Variant getVariant() {
-		return getComponents().getOrDefault(BeACollector.DOLL_VARIANT_COMPONENT, BeADoll.Variant.DEFAULT);
+		return components().getOrDefault(BeACollector.DOLL_VARIANT_COMPONENT, BeADoll.Variant.DEFAULT);
 	}
 }
