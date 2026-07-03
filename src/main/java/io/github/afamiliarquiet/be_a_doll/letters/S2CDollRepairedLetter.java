@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 public record S2CDollRepairedLetter(int entityId, ItemStack material) implements CustomPacketPayload {
 	public static final CustomPacketPayload.Type<S2CDollRepairedLetter> TYPE = new CustomPacketPayload.Type<>(BeADoll.id("doll_repaired_letter"));
 
-	public static final StreamCodec<RegistryFriendlyByteBuf, S2CDollRepairedLetter> PACKET_CODEC = StreamCodec.composite(
+	public static final StreamCodec<RegistryFriendlyByteBuf, S2CDollRepairedLetter> STREAM_CODEC = StreamCodec.composite(
 		ByteBufCodecs.INT,
 		S2CDollRepairedLetter::entityId,
 		ItemStack.STREAM_CODEC,

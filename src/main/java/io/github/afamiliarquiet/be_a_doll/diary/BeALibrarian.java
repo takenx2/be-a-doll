@@ -23,7 +23,7 @@ public class BeALibrarian {
 		builder -> builder
 			.initializer(() -> BeADoll.Variant.DEFAULT)
 			.persistent(BeADoll.Variant.CODEC)
-			.syncWith(BeADoll.Variant.PACKET_CODEC, AttachmentSyncPredicate.all())
+			.syncWith(BeADoll.Variant.STREAM_CODEC, AttachmentSyncPredicate.all())
 	);
 
 	public static final AttachmentType<Text> DOLL_NAME = AttachmentRegistry.create(
