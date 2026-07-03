@@ -11,6 +11,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.Nullable;
 
 public class BeAMaid {
@@ -35,7 +36,7 @@ public class BeAMaid {
 		}));
 	}
 
-	public static boolean isDoll(@Nullable PlayerEntity player) {
+	public static boolean isDoll(@Nullable Player player) {
 		if (player == null) {
 			return false;
 		}
@@ -55,8 +56,8 @@ public class BeAMaid {
 		// but in spirit that's what i want to do
 	}
 
-	public static void setDoll(@Nullable PlayerEntity player, BeADoll.Variant variant) {
-		if (player == null || player.getWorld().isClient()) {
+	public static void setDoll(@Nullable Player player, BeADoll.Variant variant) {
+		if (player == null || player.level().isClientSide()) {
 			return;
 		}
 		if (variant == BeALibrarian.inspectSupposedPlayer(player)) {

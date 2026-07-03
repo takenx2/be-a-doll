@@ -2,44 +2,42 @@ package io.github.afamiliarquiet.be_a_doll.item;
 
 import io.github.afamiliarquiet.be_a_doll.BeAMaid;
 import io.github.afamiliarquiet.be_a_doll.diary.BeABirdwatcher;
-import io.github.afamiliarquiet.be_a_doll.mixin.synthetic_treats.FoxEntityTrustInvoker;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.LazyEntityReference;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.Tameable;
-import net.minecraft.entity.passive.FoxEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
+import io.github.afamiliarquiet.be_a_doll.mixin.synthetic_treats.FoxTrustInvoker;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.EntityReference;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.animal.fox.Fox;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.*;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.network.ServerPlayer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.world.TeleportTarget;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
+import java.util.logging.Level;
+
 public class RibbonItem extends Item {
-	public RibbonItem(Settings settings) {
+	public RibbonItem(Properties settings) {
 		super(settings);
 	}
 
 	@Override
-	public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-		if (entity instanceof PlayerEntity doll && BeAMaid.isDoll(doll)) {
-			if (doll.startRiding(user, false)) {
+	public InteractionResult useOnEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
+		if (entity instanceof Player doll && BeAMaid.isDoll(doll)) {
+			if (doll.startRiding(user)) {
 				user.playSound(BeABirdwatcher.RAVEN_CHIRP, 1f, 1f);
-				return ActionResult.SUCCESS;
+				return InteractionResult.SUCCESS;
 			}
 		} else {
-			ActionResult tried = useToTryRiding(stack, user, entity, hand);
+			InteractionResult tried = useToTryRiding(stack, user, entity, hand);
 			if (tried.isAccepted()) {
 				return tried;
 			}
@@ -48,48 +46,48 @@ public class RibbonItem extends Item {
 		return super.useOnEntity(stack, user, entity, hand);
 	}
 
-	public ActionResult useToTryRiding(ItemStack stack, PlayerEntity user, Entity entity, Hand hand) {
+	public InteractionResult useToTryRiding(ItemStack stack, Player user, Entity entity, InteractionHand hand) {
 		if (BeAMaid.isDoll(user)) {
 			// ohh.. so the user was the doll!
 			boolean shouldRide = false;
-			if (entity instanceof Tameable tameable) {
-				LazyEntityReference<LivingEntity> ownerRef = tameable.getOwnerReference();
+			if (entity instanceof TamableAnimal tameable) {
+				EntityReference<LivingEntity> ownerRef = tameable.getOwnerReference();
 				if (ownerRef != null && ownerRef.uuidEquals(user) && entity.getWidth() > user.getWidth()) {
 					shouldRide = true;
 				}
-			} else if (entity instanceof FoxEntity foxesAreSoCool && ((FoxEntityTrustInvoker)foxesAreSoCool).invokeCanTrust(user)) {
+			} else if (entity instanceof Fox foxesAreSoCool && ((FoxTrustInvoker)foxesAreSoCool).invokeCanTrust(user)) {
 				shouldRide = true;
 			}
 
 			if (shouldRide && user.startRiding(entity)) {
 				user.playSound(BeABirdwatcher.RAVEN_CHIRP, 1f, 1f);
-				return ActionResult.SUCCESS;
+				return InteractionResult.SUCCESS;
 			}
 		}
 
-		return ActionResult.PASS;
+		return InteractionResult.PASS;
 	}
 
 	@Override
-	public ActionResult use(World world, PlayerEntity user, Hand hand) {
+	public InteractionResult use(Level world, Player user, InteractionHand hand) {
 		// yeah no lol. did you not see the C2SDollDismountLetter i had to make? client's gotta hear about this
 		if (/*!user.getWorld().isClient && */!user.getPassengerList().isEmpty() && user.shouldCancelInteraction()) {
 //			user.removeAllPassengers();
 			Entity doll = user.getPassengerList().getLast();
-			BlockHitResult blockHitResult = raycast(world, user, RaycastContext.FluidHandling.NONE);
+			BlockHitResult blockHitResult = raycast(world, user, RaycastContext.FluidInteractionHandling.NONE);
 			Vec3d pos;
 			// fear my mega if statement of doom! it could be worse. i'm just being a little bit silly with it.
 			if (!world.isClient()
 				&& blockHitResult.getType() == HitResult.Type.BLOCK
-				&& doll instanceof ServerPlayerEntity serverPlayerEntity
+				&& doll instanceof ServerPlayer serverPlayer
 				&& (pos = getDollPlacementPos(blockHitResult, doll)) != null
 			) {
-				serverPlayerEntity.teleportTo(new TeleportTarget(serverPlayerEntity.getWorld(), pos, Vec3d.ZERO, user.getYaw() + 180, user.getPitch() * -1, TeleportTarget.NO_OP));
+				serverPlayer.teleportTo(new TeleportTarget(serverPlayer.getWorld(), pos, Vec3d.ZERO, user.getYaw() + 180, user.getPitch() * -1, TeleportTarget.NO_OP));
 			} else {
 				doll.stopRiding();
 			}
 			user.playSound(BeABirdwatcher.RAVEN_CRY, 1f, 1f);
-			return ActionResult.SUCCESS;
+			return InteractionResult.SUCCESS;
 		} else {
 			return super.use(world, user, hand);
 		}
@@ -97,7 +95,7 @@ public class RibbonItem extends Item {
 
 	public static @Nullable Vec3d getDollPlacementPos(BlockHitResult blockHitResult, Entity doll) {
 		Vec3d pos = blockHitResult.getPos();
-		EntityDimensions dollStanding = doll.getDimensions(EntityPose.STANDING);
+		EntityDimensions dollStanding = doll.getDimensions(Pose.STANDING);
 
 		if (blockHitResult.getSide().getAxis() == Direction.Axis.Y) {
 			if (blockHitResult.getSide() == Direction.DOWN) {

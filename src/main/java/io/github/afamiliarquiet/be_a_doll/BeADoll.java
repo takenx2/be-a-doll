@@ -11,23 +11,26 @@ import io.github.afamiliarquiet.be_a_doll.diary.BeAResearcher;
 import io.github.afamiliarquiet.be_a_doll.diary.BeAWitch;
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.registry.tag.ItemTags;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.function.ValueLists;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.util.ByIdMap;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.tags.TagKey;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.StringRepresentable;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.IntFunction;
 
 public class BeADoll implements ModInitializer {
+	//have you ever decided to update a mod past The Boundary:tm:?
+	//it's an experience... -takenx2
 	public static final String MOD_ID = "be_a_doll";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
@@ -47,7 +50,7 @@ public class BeADoll implements ModInitializer {
 	}
 
 	public static Identifier id(String thing) {
-		return Identifier.of(MOD_ID, thing);
+		return Identifier.fromNamespaceAndPath(MOD_ID, thing);
 	}
 
 	// probably a good habit to always log my id whenever i'm throwing things in the log, even if it's just a quick test
@@ -58,13 +61,14 @@ public class BeADoll implements ModInitializer {
 	public static void warn(String message) {
 		LOGGER.warn("[Would you be a doll?] {}", message);
 	}
-
+	// sorry girls i'm not writing `Identifier.fromNamespaceAndPath("missing", "texture")` thrice... -takenx2
+	private static final Identifier missingtexture = Identifier.fromNamespaceAndPath("missing", "texture");
 	// todo - turn this into interface/abstract w/ a registry
-	public enum Variant implements StringIdentifiable {
+	public enum Variant implements StringRepresentable {
 		REPRESSED(0, "player",
 			ItemTags.ANVIL, Items.ANVIL,
-			SoundEvents.BLOCK_ANVIL_FALL,
-			Identifier.of("missing", "texture"), Identifier.of("missing", "texture"), Identifier.of("missing", "texture")), // gonna look really silly in your throat.
+			SoundEvents.ANVIL_FALL,
+			missingtexture,missingtexture,missingtexture), // gonna look really silly in your throat.
 		WOODEN(1, "wooden",
 			BeAResearcher.WOODEN_DOLL_CARE_MATERIALS, Items.STICK,
 			BeABirdwatcher.CARE_WOODEN,
@@ -87,11 +91,17 @@ public class BeADoll implements ModInitializer {
 			BeACurator.CLOCKWORK_FOOD_EMPTY, BeACurator.CLOCKWORK_FOOD_HALF, BeACurator.CLOCKWORK_FOOD_FULL);
 
 		public static final BeADoll.Variant DEFAULT = WOODEN;
-		public static final StringIdentifiable.EnumCodec<BeADoll.Variant> CODEC = StringIdentifiable.createCodec(BeADoll.Variant::values);
-		private static final IntFunction<BeADoll.Variant> INDEX_MAPPER = ValueLists.createIndexToValueFunction(
-			BeADoll.Variant::getIndex, values(), ValueLists.OutOfBoundsHandling.ZERO
+		public static final StringRepresentable.EnumCodec<BeADoll.Variant> CODEC = StringRepresentable.fromEnum(BeADoll.Variant::values);
+		public static final IntFunction<Variant> BY_ID =
+			ByIdMap.continuous(
+				Variant::getIndex,
+				Variant.values(),
+				ByIdMap.OutOfBoundsStrategy.ZERO
+			);
+		public static final StreamCodec<ByteBuf, BeADoll.Variant> STREAM_CODEC = ByteBufCodecs.idMapper(
+			Variant.BY_ID, Variant::getIndex
 		);
-		public static final PacketCodec<ByteBuf, BeADoll.Variant> PACKET_CODEC = PacketCodecs.indexed(INDEX_MAPPER, BeADoll.Variant::getIndex);
+
 		private final int index;
 		private final String id;
 		private final TagKey<Item> careMaterial;
@@ -119,18 +129,8 @@ public class BeADoll implements ModInitializer {
 		public SoundEvent getCareSound() {
 			return this.careSound;
 		}
-
-		@Override
-		public String asString() {
-			return this.id;
-		}
-
 		public int getIndex() {
 			return this.index;
-		}
-
-		public static BeADoll.Variant byIndex(int index) {
-			return (BeADoll.Variant)INDEX_MAPPER.apply(index);
 		}
 
 		public TagKey<Item> getCareMaterialTag() {
@@ -151,6 +151,11 @@ public class BeADoll implements ModInitializer {
 
 		public Identifier getFoodSpritFull() {
 			return foodSpritFull;
+		}
+
+		@Override
+		public @NonNull String getSerializedName() {
+			return this.id;
 		}
 	}
 }

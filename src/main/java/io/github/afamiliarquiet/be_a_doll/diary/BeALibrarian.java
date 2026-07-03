@@ -8,13 +8,12 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Unit;
+import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import symbolics.division.occmy.obv.OccEntities;
 
 @SuppressWarnings("UnstableApiUsage")
 public class BeALibrarian {
@@ -53,11 +52,11 @@ public class BeALibrarian {
 
 	/**
 	 * finds the doll's variant from attachment, or gets default if none found.<br/>
-	 * you should check {@link io.github.afamiliarquiet.be_a_doll.BeAMaid#isDoll(PlayerEntity)} as the authority
-	 * on whether a PlayerEntity is a player or a doll. remember this, quiet. i made javadoc for you.
+	 * you should check {@link io.github.afamiliarquiet.be_a_doll.BeAMaid#isDoll(Player)} as the authority
+	 * on whether a Player is a player or a doll. remember this, quiet. i made javadoc for you.
 	 * @return the doll's variant, or the default doll type (which is NOT a normal player and is still a doll type)
 	 */
-	public static @NotNull BeADoll.Variant inspectDollMaterial(@NotNull PlayerEntity doll) {
+	public static @NotNull BeADoll.Variant inspectDollMaterial(@NotNull Player doll) {
 		return doll.getAttachedOrCreate(DOLL_VARIANT);
 	}
 
@@ -66,33 +65,35 @@ public class BeALibrarian {
 	// and i don't ever want a doll to lose their attributes
 	// so if they lose their attributes then they must not be a doll anymore, ergo a doll has not lost their attributes
 	// being lopsided is no good so this avoids that
-	public static @NotNull BeADoll.Variant inspectSupposedPlayer(@NotNull PlayerEntity supposedPlayer) {
+	public static @NotNull BeADoll.Variant inspectSupposedPlayer(@NotNull Player supposedPlayer) {
 		return BeAMaid.isDoll(supposedPlayer) ? inspectDollMaterial(supposedPlayer) : BeADoll.Variant.REPRESSED;
 	}
 
 	// yeah we're just washing off the experimental api smell here
-	public static void reshapeDoll(@NotNull PlayerEntity doll, @NotNull BeADoll.Variant variant) {
+	public static void reshapeDoll(@NotNull Player doll, @NotNull BeADoll.Variant variant) {
 		doll.setAttached(DOLL_VARIANT, variant);
 
 		// special compat treat for clockwork dolls
-		if (FabricLoader.getInstance().isModLoaded("occmy")) {
-			if (variant == BeADoll.Variant.CLOCKWORK) {
-				doll.setAttached(OccEntities.ENJOINED, Unit.INSTANCE);
-			} else {
-				doll.removeAttached(OccEntities.ENJOINED);
-			}
-		}
+
+//		if (FabricLoader.getInstance().isModLoaded("occmy")) {
+//			if (variant == BeADoll.Variant.CLOCKWORK) {
+//				doll.setAttached(OccEntities.ENJOINED, Unit.INSTANCE);
+//			} else {
+//				doll.removeAttached(OccEntities.ENJOINED);
+//			}
+//		}
+		// i eated it sorry... -takenx2
 	}
 
-	public static @Nullable Text inspectDollLabel(@NotNull PlayerEntity doll) {
+	public static @Nullable Text inspectDollLabel(@NotNull Player doll) {
 		return doll.getAttached(DOLL_NAME);
 	}
 
-	public static void relabelDoll(@NotNull PlayerEntity doll, @Nullable Text name) {
+	public static void relabelDoll(@NotNull Player doll, @Nullable Text name) {
 		doll.setAttached(DOLL_NAME, name);
 	}
 
-	public static void repress(@NotNull PlayerEntity player) {
+	public static void repress(@NotNull Player player) {
 		// clean up special compat treat
 		if (FabricLoader.getInstance().isModLoaded("occmy")) {
 			if (inspectDollMaterial(player) == BeADoll.Variant.CLOCKWORK) {
@@ -104,23 +105,23 @@ public class BeALibrarian {
 		player.removeAttached(DOLL_NAME);
 	}
 
-	public static void filePasswordManager(@NotNull PlayerEntity player, C2SKeysmashConfigSyncLetter letter) {
+	public static void filePasswordManager(@NotNull Player player, C2SKeysmashConfigSyncLetter letter) {
 		player.setAttached(KEYSMASH_CONFIG, letter);
 	}
 
-	public static @NotNull C2SKeysmashConfigSyncLetter checkFilesForPasswordManager(@NotNull PlayerEntity player) {
+	public static @NotNull C2SKeysmashConfigSyncLetter checkFilesForPasswordManager(@NotNull Player player) {
 		return player.getAttachedOrCreate(KEYSMASH_CONFIG);
 	}
 
-	public static void filePaperwork(@NotNull PlayerEntity player, IntraLibraryMessageCacheLetter letter) {
+	public static void filePaperwork(@NotNull Player player, IntraLibraryMessageCacheLetter letter) {
 		player.setAttached(MESSAGE_CACHE, letter);
 	}
 
-	public static @Nullable IntraLibraryMessageCacheLetter checkDocuments(@NotNull PlayerEntity player) {
+	public static @Nullable IntraLibraryMessageCacheLetter checkDocuments(@NotNull Player player) {
 		return player.getAttached(MESSAGE_CACHE);
 	}
 
-	public static void shredDocuments(@NotNull PlayerEntity player) {
+	public static void shredDocuments(@NotNull Player player) {
 		player.removeAttached(MESSAGE_CACHE);
 	}
 }

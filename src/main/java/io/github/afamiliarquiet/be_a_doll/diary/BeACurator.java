@@ -1,8 +1,9 @@
 package io.github.afamiliarquiet.be_a_doll.diary;
 
 import io.github.afamiliarquiet.be_a_doll.BeADoll;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
+//hi, taken here. this one was really easy lol
 public class BeACurator {
 	// stores art pieces for viewing
 
