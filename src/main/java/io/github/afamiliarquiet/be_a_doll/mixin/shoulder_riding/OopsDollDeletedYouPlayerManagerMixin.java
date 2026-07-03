@@ -2,16 +2,17 @@ package io.github.afamiliarquiet.be_a_doll.mixin.shoulder_riding;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
+import net.minecraft.world.entity.EntityTypes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin(PlayerManager.class)
+@Mixin(PlayerList.class)
 public class OopsDollDeletedYouPlayerManagerMixin {
-	@ModifyExpressionValue(method = "remove", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;hasPlayerRider()Z"))
-	private boolean waitWaitStopDontRemoveThatPlayer(boolean original, @Local(argsOnly = true) ServerPlayerEntity disconnected, @Local Entity entity) {
-		return original && entity.streamPassengersAndSelf().noneMatch(current -> current != null && current.isPlayer() && current != disconnected);
+	@ModifyExpressionValue(method = "remove", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;hasExactlyOnePlayerPassenger()Z"))
+	private boolean waitWaitStopDontRemoveThatPlayer(boolean original, @Local(argsOnly = true) ServerPlayer disconnected, @Local Entity entity) {
+		return original && entity.getPassengersAndSelf().noneMatch(current -> current.is(EntityTypes.PLAYER) && current != disconnected);
 	}
 }
