@@ -7,31 +7,32 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.github.afamiliarquiet.be_a_doll.BeADoll;
-import io.github.afamiliarquiet.be_a_doll.diary.BeACurator;
 import io.github.afamiliarquiet.be_a_doll.BeAMaid;
+import io.github.afamiliarquiet.be_a_doll.diary.BeACurator;
 import io.github.afamiliarquiet.be_a_doll.diary.BeALibrarian;
 import io.github.afamiliarquiet.be_a_doll.diary.BeAWitch;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(InGameHud.class)
+//wait why is this a different mixin from DollsNeedNoAirInGameHudMixin???
+@Mixin(Hud.class)
 public class DollRetexturedInGameHudMixin {
 	@Shadow
-	private int ticks;
+	private int tickCount;
 
-	@Inject(method = "renderFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;getSaturationLevel()F"))
-	private void alterHungerTextures(DrawContext context, PlayerEntity player, int top, int right, CallbackInfo ci,
-									 @Local(name = "identifier", ordinal = 0) LocalRef<Identifier> emptyId,
-									 @Local(name = "identifier2", ordinal = 1) LocalRef<Identifier> fullId,
-									 @Local(name = "identifier3", ordinal = 2) LocalRef<Identifier> halfId
+	@Inject(method = "extractFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;getSaturationLevel()F"))
+	private void alterHungerTextures(GuiGraphicsExtractor context, Player player, int top, int right, CallbackInfo ci,
+	                                 @Local(name = "empty") LocalRef<Identifier> emptyId,
+	                                 @Local(name = "half") LocalRef<Identifier> fullId,
+	                                 @Local(name = "full") LocalRef<Identifier> halfId
 	) {
 		// if this has an impact on fps then SUFFER
 		if (BeAMaid.isDoll(player)) {
@@ -42,11 +43,11 @@ public class DollRetexturedInGameHudMixin {
 		}
 	}
 
-	@Definition(id = "getTexture", method = "Lnet/minecraft/client/gui/hud/InGameHud$HeartType;getTexture(ZZZ)Lnet/minecraft/util/Identifier;")
-	@Expression("?.getTexture(?, ?, ?)")
-	@ModifyExpressionValue(method = "drawHeart", at = @At("MIXINEXTRAS:EXPRESSION"))
-	private Identifier alterAbsorptitonTexture(Identifier original, @Local(argsOnly = true) InGameHud.HeartType heartType, @Local(argsOnly = true, ordinal = 0) boolean hardcore, @Local(argsOnly = true, ordinal = 2) boolean half) {
-		if (heartType == InGameHud.HeartType.ABSORBING && BeAMaid.isDoll(MinecraftClient.getInstance().player)) {
+	@Definition(id = "getSprite", method = "Lnet/minecraft/client/gui/Hud$HeartType;getSprite(ZZZ)Lnet/minecraft/resources/Identifier;")
+	@Expression("?.getSprite(?, ?, ?)")
+	@ModifyExpressionValue(method = "extractHeart", at = @At("MIXINEXTRAS:EXPRESSION"))
+	private Identifier alterAbsorptitonTexture(Identifier original, @Local(argsOnly = true) Hud.HeartType heartType, @Local(argsOnly = true, ordinal = 0) boolean hardcore, @Local(argsOnly = true, ordinal = 2) boolean half) {
+		if (heartType == Hud.HeartType.ABSORBING && BeAMaid.isDoll(Minecraft.getInstance().player)) {
 			if (half) {
 				if (hardcore) {
 					return BeACurator.CARED_HEART_HARDCORE_HALF;
@@ -65,20 +66,20 @@ public class DollRetexturedInGameHudMixin {
 		}
 	}
 
-	@Definition(id = "hasStatusEffect", method = "Lnet/minecraft/entity/player/PlayerEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z")
-	@Expression("?.hasStatusEffect(?)")
-	@ModifyExpressionValue(method = "renderStatusBars", at = @At("MIXINEXTRAS:EXPRESSION"))
-	private boolean orOverflowing(boolean original, @Local(name = "playerEntity", ordinal = 0) PlayerEntity player) {
-		return original || player.hasStatusEffect(BeAWitch.OVERFLOWING);
+	@Definition(id = "hasEffect", method = "Lnet/minecraft/world/entity/player/Player;hasEffect(Lnet/minecraft/core/Holder;)Z")
+	@Expression("?.hasEffect(?)")
+	@ModifyExpressionValue(method = "extractPlayerHealth", at = @At("MIXINEXTRAS:EXPRESSION"))
+	private boolean orOverflowing(boolean original, @Local(name = "playerEntity", ordinal = 0) Player player) {
+		return original || player.hasEffect(BeAWitch.OVERFLOWING);
 	}
 
-	@Definition(id = "getSaturationLevel", method = "Lnet/minecraft/entity/player/HungerManager;getSaturationLevel()F")
+	@Definition(id = "getSaturationLevel", method = "Lnet/minecraft/world/food/FoodData;getSaturationLevel()F")
 	@Expression("?.getSaturationLevel() <= ?")
-	@ModifyExpressionValue(method = "renderFood", at = @At("MIXINEXTRAS:EXPRESSION"))
-	private boolean resaturatingWave(boolean original, @Local(argsOnly = true) PlayerEntity player, @Local(name="j", ordinal = 3) int index, @Local(name="k", ordinal = 4) LocalIntRef yPos) {
-		if (player.hasStatusEffect(BeAWitch.OVERFLOWING) && BeAMaid.isDoll(player)) {
+	@ModifyExpressionValue(method = "extractFood", at = @At("MIXINEXTRAS:EXPRESSION"))
+	private boolean resaturatingWave(boolean original, @Local(argsOnly = true) Player player, @Local(name="j", ordinal = 3) int index, @Local(name="k", ordinal = 4) LocalIntRef yPos) {
+		if (player.hasEffect(BeAWitch.OVERFLOWING) && BeAMaid.isDoll(player)) {
 			// if i was a super optimizer i could put the ticks % 15 outside the for loop.
-			if (index == this.ticks % 25) {
+			if (index == this.tickCount % 25) {
 				yPos.set(yPos.get() - 2);
 			}
 
