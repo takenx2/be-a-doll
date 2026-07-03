@@ -3,18 +3,13 @@ package io.github.afamiliarquiet.be_a_doll.diary;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Decoder;
 import com.mojang.serialization.Encoder;
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.afamiliarquiet.be_a_doll.BeADoll;
-import net.minecraft.commands.arguments.selector.options.EntitySelectorOptions;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.recipes.RecipeCategory;
-import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.codec.StreamEncoder;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -123,9 +118,9 @@ public class BeACook {
 
 			for (int i = 0; i < remainders.size(); i++) {
 				ItemStack current = input.getItem(i);
-				ItemStack weirdAndUnlikelyRemainder = current.getItem().getCraftingRemainder().create();
-				if (!weirdAndUnlikelyRemainder.isEmpty()) {
-					remainders.set(i, weirdAndUnlikelyRemainder);
+				ItemStackTemplate weirdAndUnlikelyRemainder = current.getItem().getCraftingRemainder();
+				if (weirdAndUnlikelyRemainder != null && !weirdAndUnlikelyRemainder.is(Items.AIR)) {
+					remainders.set(i, weirdAndUnlikelyRemainder.create());
 				} else if (current.is(BeAResearcher.DOLLCRAFT_ITEMS) || current.is(Items.DIAMOND_PICKAXE)) {
 					remainders.set(i, current.copyWithCount(1));
 					break;

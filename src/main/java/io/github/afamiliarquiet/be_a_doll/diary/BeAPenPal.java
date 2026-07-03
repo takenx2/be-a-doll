@@ -10,7 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 public class BeAPenPal {
 	public static void fillPen() {
-		PayloadTypeRegistry.clientboundPlay().register(S2CDollDismountLetter.TYPE, S2CDollDismountLetter.STREAM_CODEC);
+
 
 		PayloadTypeRegistry.serverboundPlay().register(C2SEssenceAlterationLetter.TYPE, C2SEssenceAlterationLetter.STREAM_CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(C2SCreativeEssenceAlterationLetter.TYPE, C2SCreativeEssenceAlterationLetter.STREAM_CODEC);
@@ -18,6 +18,7 @@ public class BeAPenPal {
 		ServerPlayNetworking.registerGlobalReceiver(C2SCreativeEssenceAlterationLetter.TYPE, C2SCreativeEssenceAlterationLetter::receive);
 
 		PayloadTypeRegistry.clientboundPlay().register(S2CDollRepairedLetter.TYPE, S2CDollRepairedLetter.STREAM_CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(S2CDollDismountLetter.TYPE, S2CDollDismountLetter.STREAM_CODEC);
 
 		PayloadTypeRegistry.serverboundPlay().register(C2SKeysmashConfigSyncLetter.TYPE, C2SKeysmashConfigSyncLetter.STREAM_CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(C2SKeysmashConfigSyncLetter.TYPE, C2SKeysmashConfigSyncLetter::receive);

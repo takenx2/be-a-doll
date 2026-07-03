@@ -1,5 +1,6 @@
 package io.github.afamiliarquiet.be_a_doll.mixin.client;
 
+import io.github.afamiliarquiet.be_a_doll.BeADoll;
 import io.github.afamiliarquiet.be_a_doll.BeASelf;
 import io.github.afamiliarquiet.be_a_doll.letters.C2SEssenceAlterationLetter;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -27,6 +28,8 @@ public abstract class SelfInventoryScreenMixin extends AbstractRecipeBookScreen<
 	// Are you annoyed/displeased/disgusted/revolted/terrified?
 	// Tell me how I can do better! Save me! Please! Please, anyone, help me! Is anyone there?!
 	// i don't like screens
+
+	//girl idk either!!!!!!!!!!!!!!!!! -taken
 	@Inject(method = "mouseReleased", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/inventory/AbstractRecipeBookScreen;mouseReleased(Lnet/minecraft/client/input/MouseButtonEvent;)Z"), cancellable = true)
 	private void clicky(MouseButtonEvent mouse, CallbackInfoReturnable<Boolean> cir) {
 		// todone i think - if im injecting head i may want to help out with the mouseReleased thing but.. mess
@@ -34,6 +37,7 @@ public abstract class SelfInventoryScreenMixin extends AbstractRecipeBookScreen<
 		if (BeASelf.isMouseInSurvivalSelf(mouse.x(), mouse.y(), this.leftPos, this.topPos) && this.minecraft.player != null) {
 			ItemStack cursorStack = this.menu.getCarried();
 			ItemStack clickProcessedStack = null;
+			BeADoll.LOGGER.info("{}",cursorStack);
 
 			if (mouse.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
 				ClientPlayNetworking.send(new C2SEssenceAlterationLetter(true));

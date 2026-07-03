@@ -42,8 +42,8 @@ public class DollcraftItem extends Item {
 	@Override
 	public InteractionResult use(Level level, Player user, InteractionHand hand) {
 		if (BeAMaid.isDoll(user) && !findCareMaterial(user, user).isEmpty()) {
-			//user.setCurrentHand(hand);
-			return InteractionResult.CONSUME;
+			user.startUsingItem(hand);
+			return InteractionResult.SUCCESS;
 		}
 
 		return super.use(level, user, hand);
@@ -61,6 +61,7 @@ public class DollcraftItem extends Item {
 
 	@Override
 	public void onUseTick(Level world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
+		BeADoll.LOGGER.info("{}",remainingUseTicks);
 		if (user instanceof Player praiseTheDoll) {
 			ItemStack material = findCareMaterial(praiseTheDoll, praiseTheDoll);
 			if (material.isEmpty()) {
@@ -108,7 +109,9 @@ public class DollcraftItem extends Item {
 	}
 
 	public InteractionResult performCare(Player user, Player doll, ItemStack dollcraftStack, InteractionHand hand, boolean doExtraEffects) {
+		BeADoll.LOGGER.info("{} {}",BeAMaid.isDoll(doll),BeALibrarian.inspectDollMaterial(doll));
 		if (BeAMaid.isDoll(doll) && BeALibrarian.inspectDollMaterial(doll) == this.getVariant()) {
+
 			ItemStack material = findCareMaterial(user, doll);
 			if (!material.isEmpty()) {
 				if (doExtraEffects) {
