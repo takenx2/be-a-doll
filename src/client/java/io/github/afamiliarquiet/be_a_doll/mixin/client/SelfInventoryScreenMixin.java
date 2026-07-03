@@ -37,7 +37,6 @@ public abstract class SelfInventoryScreenMixin extends AbstractRecipeBookScreen<
 		if (BeASelf.isMouseInSurvivalSelf(mouse.x(), mouse.y(), this.leftPos, this.topPos) && this.minecraft.player != null) {
 			ItemStack cursorStack = this.menu.getCarried();
 			ItemStack clickProcessedStack = null;
-			BeADoll.LOGGER.info("{}",cursorStack);
 
 			if (mouse.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
 				ClientPlayNetworking.send(new C2SEssenceAlterationLetter(true));

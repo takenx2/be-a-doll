@@ -18,7 +18,6 @@ public class DollReadableNameLivingEntityRendererMixin {
 	@ModifyExpressionValue(method = "shouldShowName(Lnet/minecraft/world/entity/LivingEntity;D)Z", at = @At("MIXINEXTRAS:EXPRESSION"))
 	//hey does this actually work? idk
 	private boolean orDoll(boolean original, @Local(name = "player") LocalPlayer player) {
-		BeADoll.LOGGER.info("{}",player);
 		return original || BeAMaid.isDoll(player);
 	}
 }

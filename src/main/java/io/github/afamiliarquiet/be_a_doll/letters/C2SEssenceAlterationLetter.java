@@ -21,7 +21,6 @@ public record C2SEssenceAlterationLetter(boolean inserting) implements CustomPac
 
 	public static void receive(C2SEssenceAlterationLetter letter, ServerPlayNetworking.Context context) {
 		InventoryMenu handler = context.player().inventoryMenu;
-		BeADoll.LOGGER.info("{}",handler.getCarried());
 		ItemStack clickProcessedStack = BeASelf.clickSelf(handler.getCarried(), context.player(), letter.inserting());
 		if (clickProcessedStack != null && !context.player().isCreative()) {
 			handler.setCarried(clickProcessedStack);
